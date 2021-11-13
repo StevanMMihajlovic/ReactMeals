@@ -1,42 +1,66 @@
-import styles from './AvailableMeals.module.css';
-import MealItem from './MealItem';
-import Card from '../UI/Card';
+import styles from "./AvailableMeals.module.css";
+import MealItem from "./MealItem";
+import Card from "../UI/Card";
 
-const DUMMY_MEALS = [
-    {
-      id: 'm1',
-      name: 'Sushi',
-      description: 'Finest fish and veggies',
-      price: 22.99,
-    },
-    {
-      id: 'm2',
-      name: 'Schnitzel',
-      description: 'A german specialty!',
-      price: 16.5,
-    },
-    {
-      id: 'm3',
-      name: 'Barbecue Burger',
-      description: 'American, raw, meaty',
-      price: 12.99,
-    },
-    {
-      id: 'm4',
-      name: 'Green Bowl',
-      description: 'Healthy...and green...',
-      price: 18.99,
-    },
-  ];
+import React, { useState, useEffect, useCallback } from "react";
+import useHttp from "../../hooks/use-http";
 
 const AvailableMeals = () => {
-    return <section className={styles.meals}>
-              <Card>
-                <ul>
-                    {DUMMY_MEALS.map( x => <MealItem key={x.id} meal={x}></MealItem>)}
-                </ul>
-              </Card>
-            </section>
+  const [meals, setMeals] = useState([]);
+
+  const baseURL_FB =
+    "https://pragmatic-star-317122-default-rtdb.europe-west1.firebasedatabase.app/meals.json";
+
+  const transformMeals = useCallback((data) => {
+    const myMeals = [];
+    for (let i in data) {
+      myMeals.push({
+        id: i,
+        name: data[i].name,
+        description: data[i].description,
+        price: data[i].price,
+      });
+    }
+    setMeals(myMeals);
+  }, []);
+
+  const { load, error, getMeals } = useHttp(
+    { url: baseURL_FB },
+    transformMeals
+  );
+
+  useEffect(() => {
+    getMeals();
+  }, []);
+
+  let content = <p>No meals found.</p>;
+
+  if (error) {
+    content = <p>{error}</p>;
+  }
+  if (!load && meals.length > 0) {
+    content = (
+      <ul>
+        {meals.map((x) => (
+          <MealItem key={x.id} meal={x}></MealItem>
+        ))}
+      </ul>
+    );
+  }
+
+  if (!load && meals.length === 0 && !error) {
+    content = <p>No meals found.</p>;
+  }
+
+  if (load) {
+    content = <p>Loading...</p>;
+  }
+
+  return (
+    <section className={styles.meals}>
+      <Card>{content}</Card>
+    </section>
+  );
 };
 
 export default AvailableMeals;
